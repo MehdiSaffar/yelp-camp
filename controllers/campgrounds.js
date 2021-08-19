@@ -1,4 +1,10 @@
 const Campground = require('../models/campground')
+const { cloudinary } = require('../cloudinary')
+const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding')
+
+const mbxToken = process.env.MAPBOX_TOKEN
+
+const geocoder = mbxGeocoding({ accessToken: mbxToken })
 
 exports.index = async (req, res) => {
     const campgrounds = await Campground.find({})
@@ -10,8 +16,21 @@ exports.renderNew = async (req, res) => {
 }
 
 exports.new = async (req, res) => {
+    const response = await geocoder
+        .forwardGeocode({
+            query: req.body.campground.location,
+            limit: 1
+        })
+        .send()
+
     const campground = new Campground(req.body.campground)
     campground.author = req.user._id
+    campground.images = req.files.map(file => ({
+        url: file.path,
+        filename: file.filename
+    }))
+    campground.geometry = response.body.features[0].geometry
+    console.log('campground', campground)
     await campground.save()
     req.flash('success', 'Successfully made a new campground')
     res.redirect(`/campgrounds/${campground._id}`)
@@ -47,10 +66,30 @@ exports.renderEdit = async (req, res) => {
 
 exports.edit = async (req, res) => {
     const { id } = req.params
+    console.log(req.body)
     const campground = await Campground.findByIdAndUpdate(
         id,
         req.body.campground
     )
+    const imgs = req.files.map(file => {
+        return { url: file.path, filename: file.filename }
+    })
+    campground.images.push(...imgs)
+    await campground.save()
+    if (req.body.deleteImages?.length) {
+        for (let filename of req.body.deleteImages) {
+            await cloudinary.uploader.destroy(filename)
+        }
+        await campground.updateOne({
+            $pull: {
+                images: {
+                    filename: {
+                        $in: req.body.deleteImages
+                    }
+                }
+            }
+        })
+    }
     req.flash('success', 'Successfully edited campground')
     res.redirect(`/campgrounds/${campground._id}`)
 }

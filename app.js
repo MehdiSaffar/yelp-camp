@@ -1,3 +1,9 @@
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config()
+}
+
+console.log(process.env.SECRET);
+
 const express = require('express')
 const path = require('path')
 const mongoose = require('mongoose')
@@ -32,8 +38,6 @@ const app = express()
 app.engine('ejs', ejsMate)
 app.set('view engine', 'ejs')
 app.set('views', path.join(__dirname, 'views'))
-
-const upload = multer({ dest: 'uploads/' })
 
 app.use(express.urlencoded({ extended: true }))
 app.use(methodOverride('_method'))
