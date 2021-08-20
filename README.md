@@ -9,6 +9,21 @@ Live app: [mehdi-yelp-camp.herokuapp.com](https://mehdi-yelp-camp.herokuapp.com)
 
 I followed along [The Webdeveloper Bootcamp](https://www.udemy.com/course/the-web-developer-bootcamp/) to build YelpCamp project.
 
+# Get started
+1. Download or clone the repo
+2. Install modules
+
+```bash
+npm install
+```
+
+3. Provide required environment variables: Fill the .env.template file and rename it to .env
+4. Run in development mode
+
+```
+nodemon app.js
+```
+
 # Backend
 * The backend server is hosted in Heroku
 * The database is hosted in MongoDB Atlas
@@ -28,17 +43,3 @@ I followed along [The Webdeveloper Bootcamp](https://www.udemy.com/course/the-we
   + mapbox: for map components
   + ejs: for templating
   + ejs-mate: for boilerplate layout
-# Get started
-1. Download or clone the repo
-2. Install modules
-
-```bash
-npm install
-```
-
-3. Provide required environment variables: Fill the .env.template file and rename it to .env
-4. Run in development mode
-
-```
-nodemon app.js
-```
