@@ -23,18 +23,28 @@ const PointSchema = {
     }
 }
 
-const CampgroundSchema = new Schema({
-    title: String,
-    images: [ImageSchema],
-    price: Number,
-    description: String,
-    location: String,
-    geometry: PointSchema,
-    author: {
-        type: Schema.Types.ObjectId,
-        ref: 'User'
+const CampgroundSchema = new Schema(
+    {
+        title: String,
+        images: [ImageSchema],
+        price: Number,
+        description: String,
+        location: String,
+        geometry: PointSchema,
+        author: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        reviews: [{ type: Schema.Types.ObjectId, ref: 'Review' }]
     },
-    reviews: [{ type: Schema.Types.ObjectId, ref: 'Review' }]
+    {
+        toJSON: { virtuals: true }
+    }
+)
+
+CampgroundSchema.virtual('properties.popupMarkup').get(function () {
+    return `<strong><a href="/campgrounds/${this._id}">${this.title}</a></strong>
+    <p>${this.description.substring(0, 30)}...</p>`
 })
 
 CampgroundSchema.post('findOneAndDelete', async function (doc) {

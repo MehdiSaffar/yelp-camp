@@ -2,7 +2,7 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config()
 }
 
-console.log(process.env.SECRET);
+const helmet = require('helmet')
 
 const express = require('express')
 const path = require('path')
@@ -20,7 +20,7 @@ const User = require('./models/user')
 const ExpressError = require('./utils/ExpressError')
 const catchAsync = require('./utils/catchAsync')
 
-mongoose.connect('mongodb://localhost:27017/yelp-camp', {
+mongoose.connect(process.env.DB_URL, {
     useNewUrlParser: true,
     useCreateIndex: true,
     useUnifiedTopology: true,
@@ -29,8 +29,11 @@ mongoose.connect('mongodb://localhost:27017/yelp-camp', {
 
 const db = mongoose.connection
 db.on('error', console.error.bind(console, 'connection error:'))
-db.once('open', function () {
-    console.log('connected to mongodb')
+const clientPromise = new Promise((a, b) => {
+    db.once('open', function () {
+        console.log('connected to mongodb')
+        a(db.getClient())
+    })
 })
 
 const app = express()
@@ -42,19 +45,40 @@ app.set('views', path.join(__dirname, 'views'))
 app.use(express.urlencoded({ extended: true }))
 app.use(methodOverride('_method'))
 app.use(express.static(path.join(__dirname, 'public')))
+
+const secret = procese.env.SECRET || 'thisisnotagoodsecret'
+const MongoStore = require('connect-mongo')
+const mongoStore = MongoStore.create({
+    clientPromise,
+    secret,
+    touchAfter: 24 * 60 * 60 // in seconds
+})
+
+mongoStore.on('error', error => {
+    console.error('SESSION STORE ERROR', error)
+})
+
 app.use(
     session({
-        secret: 'thisisnotagoodsecret',
+        name: 'yc-sid',
+        secret,
         resave: false,
         saveUninitialized: true,
         cookie: {
             httpOnly: true,
+            // secure: true,
             expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
             maxAge: 1000 * 60 * 60 * 24 * 7
-        }
+        },
+        store: mongoStore
     })
 )
 app.use(flash())
+app.use(
+    helmet({
+        contentSecurityPolicy: false
+    })
+)
 app.use(passport.initialize())
 app.use(passport.session())
 passport.use(User.createStrategy())
